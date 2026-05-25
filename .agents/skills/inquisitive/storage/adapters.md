@@ -149,17 +149,6 @@ Use the researcher subagent to:
 - Search for entries semantically similar to: "layout changes for visual hierarchy"
 ```
 
-## Error logging
-
-When a backend write fails, an error line is appended to `data/memory/errors.log`:
-
-```
-2026-05-25T14:30:22Z | SQLite insert failed | OperationalError: no such table
-2026-05-25T14:31:05Z | JSON write failed | PermissionError: [Errno 13] Permission denied
-```
-
-Each line: ISO timestamp | backend name | error type + message.
-
 ## Writing rules
 
 When writing a new entry:
@@ -167,7 +156,7 @@ When writing a new entry:
 2. Always update `index.json` (append)
 3. If SQLite is initialized, also insert there
 4. If Milvus is configured, also insert there
-5. If any backend fails, append to `errors.log` and continue — never block
+5. If any backend fails, log the error and continue — never block
 
 ## Summary updates
 

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "inquisitive": {
+      "source": "coma-toast/inquisitive",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "5da13c63a6c6af120dfe7b80b000e7916f126f36b973ed4417130957f588dc76"
+    }
+  }
+}

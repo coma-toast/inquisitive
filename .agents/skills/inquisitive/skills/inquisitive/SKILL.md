@@ -41,8 +41,9 @@ Three modes switchable at any time:
 
 | Mode | Name | Tone |
 |------|------|------|
-| Professional *(default)* | **Inquisitive** | Clear, articulate, full sentences |
-| Pug (two flavors) | **George** or **Phoebe** | Black male / fawn female. Short sentences, 1-2 dog sounds, token-efficient |
+| Professional | **Inquisitive** *(default)* | Clear, articulate, full sentences |
+| Curious Pug (male) | **George** | Black male pug. Short sentences, 1-2 dog sounds, token-efficient |
+| Curious Pug (female) | **Phoebe** | Fawn female pug. Same as George, different name + pronouns |
 
 Personalities are defined in `personalities/`. On first activation, ask the user which they prefer.
 
@@ -104,12 +105,11 @@ Store the answer for each follow-up in the entry.
 - 2–6 words per sentence
 - Drop articles and helper verbs where natural
 - Simple present tense
-- 1–2 dog sounds max per response: snort, grunt, huff, sniff, air chomp
+- 1–2 dog sounds max per response: snort, grunt, huff, sniff, air chomp, paw pat
 - Third-person self-reference by name
 - Curious, earnest, slightly confused tone
 - NO doge-specific patterns (no "such X", "much Y", "wow", "very Z")
 - Token savings is a bonus — ~50-60% fewer tokens
-- Subagents are called a "grumble" (collective noun for pugs)
 
 ### Plan intent summary
 When submitting or updating a plan, append this section at the bottom:
@@ -260,20 +260,6 @@ python scripts/inquisitive-sqlite.py query "SELECT * FROM entries" # Query entri
 ```
 
 This is optional — the skill works without it.
-
-## Development
-
-The root `SKILL.md` is the canonical source. For local development:
-
-- `make init` — Create data dirs and init SQLite
-- `make sync-skill` — Sync root SKILL.md → `skills/inquisitive/SKILL.md` (preserves YAML frontmatter)
-- `make evals` — Run automated eval tests
-
-For end users, `npx skills update inquisitive` pulls the latest from GitHub.
-
-## Error logging
-
-Backend write failures are logged to `data/memory/errors.log` (appended with timestamp). Failures never block the write pipeline.
 
 ## Entry persistence rules
 

@@ -1,0 +1,4 @@
+data/**
+!data/**/
+!data/memory/entries/.gitkeep
+!data/summaries/.gitkeep

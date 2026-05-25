@@ -61,11 +61,4 @@ Before asking, analyze the change to determine the most likely category:
    - "Make it easier to understand/change" → Maintainability
    - "Make it work on platform X" → Compatibility
 
-## Pug mode conventions
-
-In George/Phoebe mode:
-- Subagents are called a "grumble" (e.g., "George ask grumble to help")
-- Dog sounds: snort, grunt, huff, sniff, air chomp (no "paw pat")
-- Max 2 sentences, 2–6 words each
-
 If the category is ambiguous, default to the primary question without a category-specific template.

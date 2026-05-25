@@ -18,7 +18,7 @@ Every time you adjust something the agent proposed — change a file, modify a p
 ## Key features
 
 - **12 memory categories** — Intent (hierarchical: company/repo/task), UX, Styling, Security, Business Logic, Efficiency, Maintainability, Reliability, Compatibility, DevEx, Data Integrity, Compliance
-- **Dual personality** — Professional mode (detailed, articulate) or Pug mode (token-efficient, fun — two flavors: George or Phoebe)
+- **Dual personality** — Professional mode (detailed, articulate) or Pug mode (token-efficient, fun — George or Phoebe)
 - **Multiple storage backends** — JSON, Markdown (Obsidian-friendly), SQLite (with 25-line CLI script), optional Milvus
 - **Auto-refining summaries** — Every 10 entries per category, the skill reviews, consolidates, and prunes memory
 - **Sub-skill generation** — When strong patterns emerge, suggests/drafts/auto-creates refinement skills
