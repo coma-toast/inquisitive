@@ -1,6 +1,13 @@
 # inquisitive
 
+[![npm](https://img.shields.io/badge/npx-skills-blue?style=flat-square)](https://github.com/vercel-labs/skills)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+
 A meta-learning skill for AI agents that gets better at first-try accuracy by learning from every user adjustment.
+
+```bash
+npx skills add coma-toast/inquisitive
+```
 
 ## What it does
 
@@ -20,10 +27,31 @@ Every time you adjust something the agent proposed — change a file, modify a p
 ## Installation
 
 ### Prerequisites
-- [Opencode](https://opencode.ai) with skill support
-- A `~/.agents/skills/` directory (create if missing)
+- Node.js (for `npx skills`) or [Opencode](https://opencode.ai)
+- Works with 40+ AI agents including OpenCode, Claude Code, Cursor, Codex, Windsurf
 
-### Install
+### Option 1: npx skills (Recommended)
+
+```bash
+npx skills add coma-toast/inquisitive
+```
+
+Install to specific agents:
+```bash
+npx skills add coma-toast/inquisitive -a opencode -a claude-code
+```
+
+Install globally (available in all projects):
+```bash
+npx skills add coma-toast/inquisitive -g
+```
+
+List available skills without installing:
+```bash
+npx skills add coma-toast/inquisitive --list
+```
+
+### Option 2: Clone and Symlink
 
 ```bash
 git clone https://github.com/coma-toast/inquisitive.git ~/git/inquisitive
@@ -31,6 +59,8 @@ ln -s ~/git/inquisitive ~/.agents/skills/inquisitive
 ```
 
 ### Optional: SQLite backend
+
+After installing, initialize the SQLite backend for queryable memory:
 
 ```bash
 cd ~/git/inquisitive
