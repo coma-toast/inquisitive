@@ -36,6 +36,7 @@ Personalities are defined in `personalities/`. On first activation, ask the user
 - User has opted out for the session
 - Per-turn question limit reached (default 1)
 - The change is a direct translation of a clear instruction with no decision
+- Do NOT confuse with grill-me — inquisitive asks one targeted "why" after a user change; it does NOT stress-test plans or interview users about their designs
 
 ## Frequency control
 
