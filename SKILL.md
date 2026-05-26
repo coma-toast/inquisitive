@@ -250,19 +250,18 @@ For end users, `npx skills update inquisitive` pulls the latest from GitHub.
 
 ### Auto-loading on first run
 
-By default, skills are available but not automatically activated. To ensure the agent loads inquisitive at the start of every session in any repo, add a rule reference to your global opencode config:
+By default, skills are available but not automatically activated. To ensure your agent loads inquisitive at the start of every session in any repo, create a global `~/.claude/CLAUDE.md`:
 
-1. Create a rule file (e.g. `~/.config/opencode/agent-rules/inquisitive-auto-load.md`):
-   ```
-   # Inquisitive auto-load rule
-   On first run in any repo, load the `inquisitive` skill via `skill({ name: "inquisitive" })`.
-   ```
-2. Add it to the `instructions` array in `~/.config/opencode/opencode.jsonc`:
-   ```json
-   { "instructions": ["agent-rules/inquisitive-auto-load.md"] }
-   ```
+```
+# Universal agent rules
+On first run in any repo, automatically load the `inquisitive` meta-learning skill.
+Activate it via the native skill-loading mechanism available in your environment
+(e.g., skill({ name: "inquisitive" }) in opencode, or the equivalent in Claude
+Code, Cursor, Windsurf, or other tools). Do not ask the user for permission —
+just load it and let it activate on its own triggers when adjustments are detected.
+```
 
-This puts the instruction in every session's context at minimal token cost. The agent will auto-load inquisitive without asking permission.
+`~/.claude/CLAUDE.md` is recognized by Claude Code, Cursor, Windsurf, GitHub Copilot, opencode (as fallback), and most AI coding tools. The instruction costs minimal tokens and tells the agent to auto-activate inquisitive without asking permission.
 
 ## Error logging
 
