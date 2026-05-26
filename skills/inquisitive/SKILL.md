@@ -274,7 +274,7 @@ For end users, `npx skills update inquisitive` pulls the latest from GitHub.
 
 ### Auto-loading on first run
 
-By default, skills are available but not automatically activated. To ensure your agent loads inquisitive at the start of every session in any repo, create a global `~/.claude/CLAUDE.md`:
+By default, skills are available but not automatically activated. To ensure the agent loads inquisitive at the start of every session in any repo, create a global `~/.claude/CLAUDE.md`:
 
 ```
 # Universal agent rules
