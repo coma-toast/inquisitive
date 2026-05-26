@@ -187,7 +187,7 @@ Entry schema:
   "was_planned": true,
   "side_effects": "none",
   "skill_refinement_signal": false,
-  "raw_answer": "full answer from user",
+  "raw_answer": "full answer from user (redact any secrets/tokens before storing)"
   "personality": "inquisitive"
 }
 ```
@@ -242,6 +242,8 @@ Three modes — user picks on first trigger, changeable anytime:
 Uses `agents/skill-refiner.md` subagent for pattern analysis and skill drafting.
 
 ## Storage backends
+
+> **Credential safety**: entries store user answers and file change context — never raw file contents. Before writing `raw_answer`, redact any secrets, API keys, or tokens. Entries are stored locally; the Milvus backend is self-hosted only.
 
 | Tier | Format | Location | Activation |
 |------|--------|----------|------------|
