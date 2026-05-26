@@ -33,7 +33,7 @@ A meta-skill that makes the agent curious about user intent. Every time the user
 - **Categorize answers** — Classify into 12 categories with hierarchical intent tracking (company → repo → task)
 - **Build memory** — Store answers in multiple backends (JSON, Markdown, SQLite, optionally Milvus)
 - **Refine summaries** — Every 10 entries per category, review, consolidate, prune, and update the evolving understanding
-- **Create sub-skills** — When strong patterns emerge, suggest, draft, or auto-create refinement skills (user's choice of 3 modes)
+- **Create sub-skills** — When strong patterns emerge, suggest or draft refinement skills (user chooses mode A/B/C; auto-save only with explicit user opt-in)
 
 ## Personalities
 
@@ -237,7 +237,7 @@ Three modes — user picks on first trigger, changeable anytime:
 |------|----------|
 | **A — Suggest in chat** *(default)* | "I notice [X% of changes are in 'Maintainability']. Want me to draft a helper skill?" |
 | **B — Auto-draft for approval** | Agent drafts the skill, then: "I wrote a mini-skill for [pattern]. Save it?" |
-| **C — Auto-create** | Agent drafts + saves the skill, then: "I created a skill for [pattern]. It's at [path]." |
+| **C — Auto-create** | Agent drafts + saves the skill (user must have explicitly enabled this mode), then: "I created a skill for [pattern]. It's at [path]." |
 
 Uses `agents/skill-refiner.md` subagent for pattern analysis and skill drafting.
 
@@ -248,7 +248,7 @@ Uses `agents/skill-refiner.md` subagent for pattern analysis and skill drafting.
 | **Simple** | JSON files + index | `data/memory/entries/*.json`, `data/memory/index.json` | Always active |
 | **Readable** | YAML-frontmatter Markdown | `data/memory/entries/*.md` | Always active |
 | **Structured** | SQLite | `data/memory/inquisitive.db` | One-time setup (`init`), then always on |
-| **Advanced** | Milvus vector DB | Via researcher subagent | Optional — configurable |
+| **Advanced** | Milvus vector DB | Via researcher subagent | Optional — self-hosted only; no data leaves your infrastructure |
 
 See `storage/adapters.md` for detailed documentation of each backend.
 
