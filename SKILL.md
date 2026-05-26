@@ -7,10 +7,9 @@ A meta-skill that makes the agent curious about user intent. Every time the user
 - **Analyze changes** — After every user-initiated file edit or plan modification, analyze what was requested vs. what the agent proposed
 - **Ask targeted questions** — Ask context-aware "why" questions that close the learning loop between the agent's suggestion and the user's choice
 - **Categorize answers** — Classify into 12 categories with hierarchical intent tracking (company → repo → task)
-- **Build memory** — Store answers at the right scope level (repo, org, or user) in the chosen backend format
+- **Build memory** — Store answers in multiple backends (JSON, Markdown, SQLite, optionally Milvus)
 - **Refine summaries** — Every 10 entries per category, review, consolidate, prune, and update the evolving understanding
 - **Create sub-skills** — When strong patterns emerge, suggest, draft, or auto-create refinement skills (user's choice of 3 modes)
-- **Load context for planning** — Before any plan or build task, load merged memory from all 3 levels and surface relevant preferences
 
 ## Personalities
 
@@ -39,93 +38,13 @@ Personalities are defined in `personalities/`. On first activation, ask the user
 - The change is a direct translation of a clear instruction with no decision
 - Do NOT confuse with grill-me — inquisitive asks one targeted "why" after a user change; it does NOT stress-test plans or interview users about their designs
 
-## First run in a repo
-
-On first activation in a repo (no `.inquisitive/` directory found), run this setup flow before anything else.
-
-### Step 1: Choose storage backend
-
-> "First time here — I need to pick a storage format for memory in this repo. Here's what each option means:
->
-> **1. JSON** — machine-readable `.json` files. Fast, portable, easy to parse in scripts. Not human-readable without a tool.
-> **2. Markdown** — human-readable `.md` files. Browse in Obsidian, read in any editor, grep-able. Harder to query across entries.
-> **3. SQLite** — single queryable database. Filter, aggregate, find patterns with SQL. Not readable without tooling; no individual entry files to browse.
-> **4. JSON + Markdown** *(default)* — both file types per entry. Human and machine readable, no setup required.
-> **5. Markdown + SQLite** *(recommended)* — human-readable entry files AND a queryable database. Best balance of browsability and power. Requires Python's built-in `sqlite3`.
-> **6. JSON + Markdown + SQLite** — everything. Maximum compatibility and queryability. Triple storage overhead.
->
-> Which format? (1–6, or press enter for default JSON + Markdown)"
-
-Store decision in `.inquisitive/config.json` as `"backend"`:
-
-| Choice | Value |
-|--------|-------|
-| 1 | `"json"` |
-| 2 | `"md"` |
-| 3 | `"sqlite"` |
-| 4 | `"json-md"` |
-| 5 | `"md-sqlite"` |
-| 6 | `"all"` |
-
-### Step 2: Choose personality
-
-> "Which personality should I use for questions?
-> - **Inquisitive** *(default)* — professional, clear, full sentences
-> - **George** — curious black male pug, short sentences, dog sounds
-> - **Phoebe** — curious fawn female pug, same as George"
-
-Store as `"personality"` in config.
-
-### Step 3: Choose frequency
-
-> "How often should I ask about changes?
-> - **Every change** — fastest learning, more questions
-> - **Major changes only** *(default)* — balanced
-> - **Rarely** — minimal interruptions, slower learning"
-
-Store as `"frequency"` in config.
-
-### Step 4: Create `.inquisitive/` structure
-
-Create the following in the repo root:
-
-```
-.inquisitive/
-  .gitignore        # see content below
-  config.json       # backend, personality, frequency, org_slug
-  entries/          # created empty
-  summaries/        # created empty — committed to git
-  errors.log        # created empty — gitignored
-```
-
-**`.inquisitive/.gitignore` content:**
-```gitignore
-# Private — not committed
-entries/
-*.db
-errors.log
-
-# Summaries ARE committed (enables team sharing of learned preferences)
-# To stop sharing summaries with your team, uncomment:
-# summaries/
-```
-
-**`.inquisitive/config.json` initial structure:**
-```json
-{
-  "backend": "json-md",
-  "personality": "inquisitive",
-  "frequency": "major",
-  "org_slug": null
-}
-```
-
-`org_slug` is set when the first org-level entry is stored (see Memory scoping below).
-
 ## Frequency control
 
-On first run (after setup), explain:
-> "To get it right on the first try, I want to learn from every adjustment. Asking about changes builds a better model of your preferences so I make fewer wrong guesses."
+On first activation, explain the value and ask:
+> "To get it right on the first try, I want to learn from every adjustment. Asking about changes builds a better model of your preferences so I make fewer wrong guesses. How often should I ask?
+> **1. Every change** — fastest learning, more questions
+> **2. Major changes only** *(default)* — balanced
+> **3. Rarely** — minimal interruptions, slower learning"
 
 Every 10 entries, re-check: "The questions are helping — I'm getting [category] right more often. Keep the current pace, speed up, or slow down?"
 
@@ -202,214 +121,71 @@ Does this match your understanding? I'll adjust as we work.
 See `references/category-guide.md` for full definitions with domain-specific examples.
 
 **Intent hierarchy** — entries in the Intent category capture three levels:
-- `company`: The broad business/organizational goal → maps to **org-level** memory
-- `repo`: What this specific project/repo aims to do → maps to **repo-level** memory
-- `task`: What the current change is trying to accomplish → maps to **repo-level** memory
-
-## 3-level memory architecture
-
-Every entry is stored at exactly one scope level: **repo**, **org**, or **user**.
-
-### Storage locations
-
-| Level | Location | What goes here |
-|-------|----------|----------------|
-| **Repo** | `<repo-root>/.inquisitive/` | Preferences specific to this codebase |
-| **Org** | `~/.inquisitive/orgs/<org-slug>/` | Conventions shared across an org's repos |
-| **User** | `~/.inquisitive/user/` | Personal preferences across all projects |
-
-Each level has the same internal structure:
-```
-entries/          # individual entry files (format depends on backend choice)
-summaries/        # one file per category — the refined understanding
-inquisitive.db    # SQLite db (only if backend includes sqlite)
-errors.log        # append-only write failure log
-```
-
-For repo-level, `summaries/` is committed to git. For org and user levels, everything lives in `~/.inquisitive/` (never committed).
-
-### Scope classification
-
-When storing an entry, classify scope automatically:
-
-**→ User scope** (no prompt) when the answer is explicitly first-person personal:
-- Contains: "I always", "I personally", "I prefer", "I like to", "my habit"
-- Write to `~/.inquisitive/user/`
-
-**→ Prompt the user** when the answer sounds cross-repo:
-- Contains: "we always", "our team", "in all our projects", "our standard", "across repos"
-- Category is `intent` at `company` level
-- Same preference has appeared in 2+ different repos (detectable via user-level summary)
-- Ask: *"This sounds like it might apply beyond this repo. Save as: (1) Just this repo  (2) Org-wide  (3) Your personal preference?"*
-- If they choose org: proceed to org slug resolution (below)
-
-**→ Repo scope** (default, no prompt) for everything else.
-
-### Org slug resolution
-
-Triggered when the user chooses org-level for the first time (or when `org_slug` is null in config).
-
-1. Run `git remote get-url origin` and parse the owner segment:
-   - `https://github.com/acme-corp/repo` → `acme-corp`
-   - `git@github.com:acme-corp/repo.git` → `acme-corp`
-2. Suggest it: *"Looks like your org is `acme-corp` from your git remote — use that, or enter a different name?"*
-3. Store confirmed slug in both `.inquisitive/config.json` and `~/.inquisitive/config.json`
-4. Create `~/.inquisitive/orgs/<org-slug>/` with same structure as other levels
-
-## Loading memory for planning
-
-**Before any plan or build task**, load inquisitive memory from all 3 levels and surface relevant preferences. Use `agents/context-loader.md` for the full loading procedure.
-
-### Quick reference
-
-1. Read `.inquisitive/config.json` → get `org_slug`, `backend`
-2. Load `.inquisitive/summaries/` → repo-level preferences
-3. Load `~/.inquisitive/user/summaries/` → user preferences
-4. Load `~/.inquisitive/orgs/<org-slug>/summaries/` → org preferences (if `org_slug` set)
-5. Merge all three — **repo overrides org overrides user** on any conflict
-6. Prepend to plan as:
-
-```markdown
-## Inquisitive Context
-
-**Repo preferences** (`<repo-name>`):
-- [styling-layout] Cards preferred over tables for pricing sections
-- [maintainability] All utilities extracted into shared modules
-
-**Org preferences** (`acme-corp`):
-- [styling-layout] All projects use Tailwind CSS
-- [compatibility] Minimum Node 20 across all services
-
-**User preferences**:
-- [developer-experience] Prefer async/await over .then() chains
-
-*Outdated? Run `/inquisitive-refine` to update.*
-```
-
-If no `.inquisitive/` found: skip silently, note "no inquisitive memory for this repo yet" in plan footer.
+- `company`: The broad business/organizational goal
+- `repo`: What this specific project/repo aims to do
+- `task`: What the current change is trying to accomplish
 
 ## Bootstrap repo scan
 
-On first activation in a new repo (after setup flow above):
-> "Want me to scan the project to find inconsistencies or unclear areas? This seeds my understanding faster so I make fewer wrong guesses."
+On first activation in a new repo:
+> "New repo for me! I can scan the project to find inconsistencies or unclear areas and ask about them — this seeds my understanding faster so I make fewer wrong guesses. Also, pick a personality:
+> - **Inquisitive** *(professional)* — clear, articulate questions
+> - **George** — curious black male pug, short sentences
+> - **Phoebe** — curious fawn female pug, same as George
+>
+> Want me to scan? And which personality?"
 
 If scan accepted:
 1. Scan README, configs, package files, directory structure, key source files
 2. Identify inconsistencies, ambiguous intent, unclear design patterns
 3. Ask up to **3 questions per category** (max ~15 per session)
 4. Seed initial memory entries + summaries
-5. Collect any tasks identified during scan and emit them all at the end (see Task tracking)
 
 Manual trigger: `/inquisitive-scan` or "run the repo scan again"
 
-## Task tracking
-
-When inquisitive identifies actionable tasks (cleanup, missing tests, missing docs, dead code, etc.) during a bootstrap scan or any session, it tracks them without interrupting the flow.
-
-### Detection
-
-Flag a task when:
-- A scan reveals a clear gap (no tests, dead code, missing README section, stale config)
-- A question answer implies deferred work (e.g., "that module is outdated")
-- The user explicitly mentions something needs fixing
-
-### Delegation order
-
-1. **Check if a todo skill is available** — look for `todo-add`, `todo-check`, or `todo-manager` in the agent's loaded skill list (system prompt). If found, delegate task creation to it.
-2. **Check the filesystem** — if the skill list is unavailable, glob for `todo-*/SKILL.md` in common skill paths (`~/.agents/skills/`, `.opencode/skills/`, `~/.config/opencode/skills/`). If found, delegate.
-3. **Check if a todo MCP server is available** — if a todo/task MCP tool is registered, use it.
-4. **Fall back: write directly to `TODO.md`** in the repo root using the standard format (see `references/task-tracking.md`).
-
-### Batch, don't interrupt
-
-- Collect all tasks identified during a scan; emit them **all at once at the end**
-- Do not break question flow to log tasks one-by-one
-- After the scan, summarize:
-  > "Found [N] tasks and added them to TODO.md [or: via [skill-name]]:"
-  > - [brief task list]
-  >
-  > Take action on any now, or review TODO.md later.
-
-### George/Phoebe variant
-
-> "George find [N] thing to fix. Added to list. Sniff sniff. Look later?"
-
-### Fallback TODO.md format
-
-If writing directly (no todo skill available):
-
-```markdown
-- [ ] Task description
-  - **Context:** Why this was flagged by inquisitive
-  - **Validation Criteria:** How to confirm it's done
-  - **Created:** YYYY-MM-DD
-```
-
-Priority sections (create if missing): `## Priority: High`, `## Priority: Medium`, `## Priority: Low`
-
-Default priority: **Medium** unless the gap is a security issue or blocking (High) or purely cosmetic (Low).
-
-See `references/task-tracking.md` for full format reference and skill detection details.
-
 ## Memory architecture
 
-### Entry schema
+### Layer 1: Individual entries (append-only log)
+Every question → answer → categorization → stored as an entry file.
 
-Every entry includes these fields regardless of backend:
-
+Entry schema:
 ```json
 {
-  "id": "2026-05-26-143022",
-  "timestamp": "2026-05-26T14:30:22-04:00",
-  "scope": "repo",
-  "org_slug": null,
-  "repo": "my-project",
-  "file_changed": "src/components/Pricing.tsx",
+  "id": "2026-05-25-143022",
+  "timestamp": "2026-05-25T14:30:22-04:00",
+  "project": "inquisitive",
+  "file_changed": "SKILL.md",
   "original_suggestion": "description of what agent proposed",
   "user_choice": "description of what user chose instead",
-  "primary_category": "styling-layout",
+  "primary_category": "intent",
   "secondary_category": "ux",
-  "criticality": 4,
-  "was_planned": false,
-  "side_effects": "need to adjust mobile breakpoints",
+  "criticality": 3,
+  "was_planned": true,
+  "side_effects": "none",
   "skill_refinement_signal": false,
   "raw_answer": "full answer from user",
   "personality": "inquisitive"
 }
 ```
 
-`scope`: `"repo"` | `"org"` | `"user"`
-`org_slug`: org name string, or `null` for repo/user scope
-
 ### Layer 2: Summaries (curated knowledge)
-
-Each category has a summary file in `<level>/summaries/<category>.json` (or `.md` for markdown-only backends):
-
+Each category has a file in `data/summaries/<category>.json`:
 ```json
 {
-  "category": "styling-layout",
-  "scope": "repo",
-  "repo": "my-project",
-  "summary": "Continuously refined understanding...",
-  "entries": ["id1", "id2", "id3"],
-  "entry_count": 3,
-  "last_refined": "2026-05-26T14:30:22-04:00"
-}
-```
-
-For intent category at repo scope, also include:
-```json
-{
+  "category": "intent",
+  "summary": "Continuously refined understanding of user's intent...",
   "hierarchy": {
     "company": "Generate leads from devs visiting docs",
     "repo": "Convert readers into trial users",
     "task": "Fix CTA position above fold"
-  }
+  },
+  "entries": ["id1", "id2", "id3"],
+  "entry_count": 3,
+  "last_refined": "2026-05-25T14:30:22-04:00"
 }
 ```
 
 ### Auto-refinement process
-
 Triggered every **10 entries per category**:
 1. Review all entries in the category
 2. Fully valid entries → keep as-is
@@ -420,30 +196,12 @@ Triggered every **10 entries per category**:
 7. Enforce ≤10 entries cap per category — combine multiple into 1 if needed
 
 ### Manual interactive refinement
-
 User says `/inquisitive-refine` or "let's review memory":
 - Agent presents each category's summary and entries
 - "Does this summary still feel accurate?"
 - "This entry from [date] — still relevant?"
 - "I noticed [pattern] — could you tell me more?"
 - User can confirm, modify, merge, or delete entries interactively
-
-## Storage backends
-
-The backend is chosen once per repo on first run and stored in `.inquisitive/config.json`. It is never changed automatically.
-
-| Backend | `config.backend` | Files written | Index |
-|---------|-----------------|--------------|-------|
-| JSON | `json` | `entries/<id>.json` | `index.json` |
-| Markdown | `md` | `entries/<id>.md` | `index.md` |
-| SQLite | `sqlite` | `inquisitive.db` | SQL query |
-| JSON + Markdown | `json-md` | Both file types | `index.json` |
-| Markdown + SQLite | `md-sqlite` | `.md` files + `inquisitive.db` | `index.md` + SQL |
-| JSON + Markdown + SQLite | `all` | All three | Both + SQL |
-
-See `storage/adapters.md` for full schema details per backend.
-
-**Write pipeline:** Before writing any entry, read `config.backend` and write only to the selected backends. Never write to a backend not in the config. Log failures to `errors.log` and continue — never block on a failed write.
 
 ## Skill refinement loop
 
@@ -459,70 +217,80 @@ Three modes — user picks on first trigger, changeable anytime:
 
 Uses `agents/skill-refiner.md` subagent for pattern analysis and skill drafting.
 
+## Storage backends
+
+| Tier | Format | Location | Activation |
+|------|--------|----------|------------|
+| **Simple** | JSON files + index | `data/memory/entries/*.json`, `data/memory/index.json` | Always active |
+| **Readable** | YAML-frontmatter Markdown | `data/memory/entries/*.md` | Always active |
+| **Structured** | SQLite | `data/memory/inquisitive.db` | One-time setup (`init`), then always on |
+| **Advanced** | Milvus vector DB | Via researcher subagent | Optional — configurable |
+
+See `storage/adapters.md` for detailed documentation of each backend.
+
+### SQLite CLI
+A helper script at `scripts/inquisitive-sqlite.py` provides three commands:
+```bash
+python scripts/inquisitive-sqlite.py init                          # Create tables
+python scripts/inquisitive-sqlite.py insert '{"id":"...", ...}'   # Insert an entry
+python scripts/inquisitive-sqlite.py query "SELECT * FROM entries" # Query entries
+```
+
+This is optional — the skill works without it.
+
 ## Development
 
 The root `SKILL.md` is the canonical source. For local development:
 
-- `make init` — Create `.inquisitive/` dirs and init SQLite (if applicable)
+- `make init` — Create data dirs and init SQLite
 - `make sync-skill` — Sync root SKILL.md → `skills/inquisitive/SKILL.md` (preserves YAML frontmatter)
 - `make evals` — Run automated eval tests
 
 For end users, `npx skills update inquisitive` pulls the latest from GitHub.
 
+### Auto-loading on first run
+
+By default, skills are available but not automatically activated. To ensure the agent loads inquisitive at the start of every session in any repo, add a rule reference to your global opencode config:
+
+1. Create a rule file (e.g. `~/.config/opencode/agent-rules/inquisitive-auto-load.md`):
+   ```
+   # Inquisitive auto-load rule
+   On first run in any repo, load the `inquisitive` skill via `skill({ name: "inquisitive" })`.
+   ```
+2. Add it to the `instructions` array in `~/.config/opencode/opencode.jsonc`:
+   ```json
+   { "instructions": ["agent-rules/inquisitive-auto-load.md"] }
+   ```
+
+This puts the instruction in every session's context at minimal token cost. The agent will auto-load inquisitive without asking permission.
+
 ## Error logging
 
-Backend write failures are logged to `.inquisitive/errors.log` (appended with timestamp). Failures never block the write pipeline.
+Backend write failures are logged to `data/memory/errors.log` (appended with timestamp). Failures never block the write pipeline.
 
-Format: `ISO timestamp | backend | error type + message`
+## Entry persistence rules
 
-## File locations
+When writing an entry, write to **all active backends** in parallel:
+- JSON file + update index.json
+- Markdown file
+- SQLite (if initialized)
+- Milvus (if configured)
 
-### Repo-level (per working repo)
+Error handling: if one backend fails, log the error and continue with the others. Never block on a failed backend.
 
-| Resource | Path |
-|----------|------|
-| Config | `<repo>/.inquisitive/config.json` |
-| Entries | `<repo>/.inquisitive/entries/` |
-| Summaries | `<repo>/.inquisitive/summaries/` |
-| SQLite DB | `<repo>/.inquisitive/inquisitive.db` |
-| Error log | `<repo>/.inquisitive/errors.log` |
-| Task list | `<repo>/TODO.md` |
-
-### User-level (global personal preferences)
-
-| Resource | Path |
-|----------|------|
-| Entries | `~/.inquisitive/user/entries/` |
-| Summaries | `~/.inquisitive/user/summaries/` |
-| SQLite DB | `~/.inquisitive/user/inquisitive.db` |
-
-### Org-level (shared org conventions)
-
-| Resource | Path |
-|----------|------|
-| Entries | `~/.inquisitive/orgs/<org-slug>/entries/` |
-| Summaries | `~/.inquisitive/orgs/<org-slug>/summaries/` |
-| SQLite DB | `~/.inquisitive/orgs/<org-slug>/inquisitive.db` |
-
-### Global config
-
-| Resource | Path |
-|----------|------|
-| Global config | `~/.inquisitive/config.json` |
-| Known org slugs | Listed in global config `orgs` array |
-
-### Skill resources (read-only, installed with skill)
+## File locations (all relative to skill root `~/.agents/skills/inquisitive/`)
 
 | Resource | Path |
 |----------|------|
 | Personalities | `personalities/inquisitive.md`, `george.md`, `phoebe.md` |
 | Question templates | `references/question-templates.md` |
 | Category guide | `references/category-guide.md` |
-| Task tracking ref | `references/task-tracking.md` |
-| Context loader agent | `agents/context-loader.md` |
 | Refiner subagent | `agents/skill-refiner.md` |
 | Storage docs | `storage/adapters.md` |
 | SQLite script | `scripts/inquisitive-sqlite.py` |
+| Memory index | `data/memory/index.json` |
+| Memory entries | `data/memory/entries/` |
+| Category summaries | `data/summaries/<category>.json` |
 
 ## Example workflow
 
@@ -531,7 +299,6 @@ User: "Actually, don't use a table for the pricing section — use cards instead
 
 Agent: [detects change from proposal → user's choice]
 [Activates inquisitive skill]
-[Loads .inquisitive/config.json → backend: md-sqlite, personality: inquisitive]
 
 > Primary question:
 > "What was the primary motivation behind this change? I suggested a table layout
@@ -541,10 +308,8 @@ Agent: [detects change from proposal → user's choice]
 User: "Tables feel too spreadsheet-like for pricing. Cards let me add visual
        hierarchy — feature badges, callout buttons, spacing."
 
-Agent: [classifies scope: repo (no cross-repo signals)]
-       [categorizes: primary=styling-layout, secondary=ux]
-       [writes .md entry + SQLite row to .inquisitive/]
-       [updates .inquisitive/summaries/styling-layout.md]
+Agent: [categorizes as: primary=styling-layout, secondary=ux]
+       [stores entry + updates summary]
 
 > "Quick follow-ups — just say 'skip' to any:
 > 1. Criticality (1-5)? **4**
