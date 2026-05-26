@@ -1,26 +1,47 @@
 # Storage Adapters
 
-Documentation for all four storage backends.
+Documentation for all storage backends. The backend is chosen once per repo on first run and stored in `.inquisitive/config.json`. Only the selected backends are written to — never all of them by default.
 
-## Quick comparison
+## Backend options
 
-| Tier | Format | Pros | Cons | Active by default |
-|------|--------|------|------|-------------------|
-| Simple | JSON | Zero deps, fast, machine-friendly | Not human-readable | Yes |
-| Readable | Markdown | Obsidian-compatible, grep-able, human-reviewable | Larger disk usage | Yes |
-| Structured | SQLite | Queryable, aggregatable, CLI tooling | Dependency (sqlite3) | On setup |
-| Advanced | Milvus | Semantic search, pattern matching | Heavy, requires researcher subagent | No |
+| Option | `config.backend` | Files written | Index | Best for |
+|--------|-----------------|--------------|-------|----------|
+| JSON | `json` | `entries/<id>.json` | `index.json` | Programmatic consumers, pipelines |
+| Markdown | `md` | `entries/<id>.md` | `index.md` | Human review, Obsidian, grep |
+| SQLite | `sqlite` | `inquisitive.db` only | SQL query | Querying, aggregating, patterns |
+| JSON + Markdown | `json-md` | Both file types | `index.json` | Human + machine readable, no setup *(default)* |
+| Markdown + SQLite | `md-sqlite` | `.md` files + db | `index.md` + SQL | Browsable entries + queryable DB *(recommended)* |
+| JSON + Markdown + SQLite | `all` | All three | Both + SQL | Maximum compatibility |
 
-## Tier 1: JSON (always active)
+## Storage locations
 
-**Location:** `data/memory/entries/<id>.json` and `data/memory/index.json`
+All paths are relative to the **scope level** of the entry:
 
-**Entry format:**
+| Scope | Root path |
+|-------|-----------|
+| Repo | `<repo-root>/.inquisitive/` |
+| Org | `~/.inquisitive/orgs/<org-slug>/` |
+| User | `~/.inquisitive/user/` |
+
+Within each root:
+```
+entries/          # individual entry files
+summaries/        # one file per category
+inquisitive.db    # SQLite (only if backend includes sqlite)
+errors.log        # append-only failure log
+```
+
+## Entry schema (all backends)
+
+Every entry contains:
+
 ```json
 {
-  "id": "2026-05-25-143022",
-  "timestamp": "2026-05-25T14:30:22-04:00",
-  "project": "my-project",
+  "id": "2026-05-26-143022",
+  "timestamp": "2026-05-26T14:30:22-04:00",
+  "scope": "repo",
+  "org_slug": null,
+  "repo": "my-project",
   "file_changed": "src/components/Pricing.tsx",
   "original_suggestion": "table layout with row striping",
   "user_choice": "card layout with feature badges",
@@ -30,18 +51,51 @@ Documentation for all four storage backends.
   "was_planned": false,
   "side_effects": "need to adjust mobile breakpoints",
   "skill_refinement_signal": false,
-  "raw_answer": "Tables feel too spreadsheet-like...",
+  "raw_answer": "Tables feel too spreadsheet-like for pricing...",
   "personality": "inquisitive"
 }
 ```
 
-**Index format:** `data/memory/index.json`
+`scope`: `"repo"` | `"org"` | `"user"`
+`org_slug`: org name string, or `null` for repo/user scope
+
+---
+
+## Backend 1: JSON (`"json"`)
+
+**Entry files:** `entries/<id>.json`
+**Index:** `index.json`
+
+Entry file format:
+```json
+{
+  "id": "2026-05-26-143022",
+  "timestamp": "2026-05-26T14:30:22-04:00",
+  "scope": "repo",
+  "org_slug": null,
+  "repo": "my-project",
+  "file_changed": "src/components/Pricing.tsx",
+  "original_suggestion": "table layout with row striping",
+  "user_choice": "card layout with feature badges",
+  "primary_category": "styling-layout",
+  "secondary_category": "ux",
+  "criticality": 4,
+  "was_planned": false,
+  "side_effects": "need to adjust mobile breakpoints",
+  "skill_refinement_signal": false,
+  "raw_answer": "Tables feel too spreadsheet-like for pricing...",
+  "personality": "inquisitive"
+}
+```
+
+Index format (`index.json`) — lightweight summary for fast scanning:
 ```json
 [
   {
-    "id": "2026-05-25-143022",
-    "timestamp": "2026-05-25T14:30:22-04:00",
-    "project": "my-project",
+    "id": "2026-05-26-143022",
+    "timestamp": "2026-05-26T14:30:22-04:00",
+    "scope": "repo",
+    "repo": "my-project",
     "primary_category": "styling-layout",
     "secondary_category": "ux",
     "criticality": 4,
@@ -50,18 +104,23 @@ Documentation for all four storage backends.
 ]
 ```
 
-The index is an array. Append to it when writing a new entry. Use it for fast scanning without reading all entry files.
+Append to `index.json` array on each new entry. Never rewrite the whole file — read, append, write.
 
-## Tier 2: Markdown (always active)
+---
 
-**Location:** `data/memory/entries/<id>.md`
+## Backend 2: Markdown (`"md"`)
 
-**Format:**
+**Entry files:** `entries/<id>.md`
+**Index:** `index.md`
+
+Entry file format:
 ```markdown
 ---
-id: "2026-05-25-143022"
-timestamp: "2026-05-25T14:30:22-04:00"
-project: "my-project"
+id: "2026-05-26-143022"
+timestamp: "2026-05-26T14:30:22-04:00"
+scope: "repo"
+org_slug: null
+repo: "my-project"
 file_changed: "src/components/Pricing.tsx"
 primary_category: "styling-layout"
 secondary_category: "ux"
@@ -81,20 +140,32 @@ personality: "inquisitive"
 **Skill refinement signal:** no
 ```
 
-These files are designed to be opened in Obsidian for manual review.
+Index format (`index.md`) — Markdown table for human scanning:
+```markdown
+# Inquisitive Entry Index
 
-## Tier 3: SQLite (on setup, then always on)
+| ID | Timestamp | Scope | Repo | Category | Criticality |
+|----|-----------|-------|------|----------|-------------|
+| 2026-05-26-143022 | 2026-05-26T14:30 | repo | my-project | styling-layout | 4 |
+```
 
-**Location:** `data/memory/inquisitive.db`
+Append a new row to the index table on each new entry.
 
-**Setup:** Run `python scripts/inquisitive-sqlite.py init` once. This creates the database and tables.
+---
+
+## Backend 3: SQLite (`"sqlite"`)
+
+**Database:** `inquisitive.db`
+**No flat files** — entries and index exist only in the database.
 
 **Schema:**
 ```sql
-CREATE TABLE entries (
+CREATE TABLE IF NOT EXISTS entries (
   id TEXT PRIMARY KEY,
-  timestamp TEXT,
-  project TEXT,
+  timestamp TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'repo',
+  org_slug TEXT,
+  repo TEXT,
   file_changed TEXT,
   original_suggestion TEXT,
   user_choice TEXT,
@@ -104,77 +175,162 @@ CREATE TABLE entries (
   was_planned INTEGER,
   side_effects TEXT,
   skill_refinement_signal INTEGER,
-  raw_answer TEXT
+  raw_answer TEXT,
+  personality TEXT
 );
 
-CREATE TABLE summaries (
-  category TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS summaries (
+  category TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'repo',
+  org_slug TEXT,
+  repo TEXT,
   summary TEXT,
-  last_refined TEXT
+  entry_count INTEGER DEFAULT 0,
+  last_refined TEXT,
+  PRIMARY KEY (category, scope, repo)
 );
 ```
 
-**Usage:**
+**Common queries:**
 ```bash
-# Initialize
-python scripts/inquisitive-sqlite.py init
+# All entries for a repo
+python scripts/inquisitive-sqlite.py query \
+  "SELECT * FROM entries WHERE repo = 'my-project'"
 
-# Insert an entry
-python scripts/inquisitive-sqlite.py insert '{"id":"2026-05-25-143022","timestamp":"2026-05-25T14:30:22-04:00","project":"my-project","file_changed":"src/components/Pricing.tsx","original_suggestion":"table layout","user_choice":"card layout","primary_category":"styling-layout","secondary_category":"ux","criticality":4,"was_planned":0,"side_effects":"breakpoint adjustment needed","skill_refinement_signal":0,"raw_answer":"Tables feel too spreadsheet-like"}'
+# Category breakdown
+python scripts/inquisitive-sqlite.py query \
+  "SELECT primary_category, COUNT(*) as count FROM entries GROUP BY primary_category ORDER BY count DESC"
 
-# Query entries
-python scripts/inquisitive-sqlite.py query "SELECT * FROM entries WHERE primary_category = 'styling-layout'"
+# High-criticality entries
+python scripts/inquisitive-sqlite.py query \
+  "SELECT id, primary_category, raw_answer FROM entries WHERE criticality >= 4"
 
-# Get category counts
-python scripts/inquisitive-sqlite.py query "SELECT primary_category, COUNT(*) as count FROM entries GROUP BY primary_category ORDER BY count DESC"
+# Entries by scope
+python scripts/inquisitive-sqlite.py query \
+  "SELECT scope, COUNT(*) FROM entries GROUP BY scope"
 ```
 
-## Tier 4: Milvus (optional)
+Setup: `python scripts/inquisitive-sqlite.py init` (creates tables in `.inquisitive/inquisitive.db` of CWD).
 
-Requires the researcher subagent and a running Milvus instance.
+---
 
-**Collection name:** `inquisitive_memory`
+## Backend 4: JSON + Markdown (`"json-md"`) — default
 
-**Schema:**
-- `id` (string, primary)
-- `project` (string)
-- `primary_category` (string)
-- `raw_answer` (string) — vectorized for semantic search
-- `timestamp` (string)
+Writes both `entries/<id>.json` and `entries/<id>.md` per entry.
+Index: `index.json` (JSON format).
 
-**Usage:** Invoke the researcher subagent:
+Follow Backend 1 for `.json` format and Backend 2 for `.md` format.
+
+No SQLite — no setup required beyond creating `.inquisitive/`.
+
+---
+
+## Backend 5: Markdown + SQLite (`"md-sqlite"`) — recommended
+
+Writes `entries/<id>.md` per entry AND inserts into `inquisitive.db`.
+Index: `index.md` (Markdown format) + SQL queries on the database.
+
+Follow Backend 2 for `.md` format and Backend 3 for SQLite schema.
+
+Setup: `python scripts/inquisitive-sqlite.py init` once per scope level.
+
+---
+
+## Backend 6: JSON + Markdown + SQLite (`"all"`)
+
+Writes all three formats per entry.
+Index: `index.json` + `index.md` + SQL.
+
+Follow Backends 1, 2, and 3 for their respective formats.
+
+---
+
+## Summary files
+
+Summaries are stored per category at each scope level. Format depends on backend:
+
+**JSON/JSON+MD/MD+SQLite/all backends** — `summaries/<category>.json`:
+```json
+{
+  "category": "styling-layout",
+  "scope": "repo",
+  "repo": "my-project",
+  "org_slug": null,
+  "summary": "Cards are strongly preferred over tables for pricing and comparison sections. User values visual hierarchy, badge support, and spacing control over data density.",
+  "entries": ["2026-05-26-143022", "2026-05-26-150311"],
+  "entry_count": 2,
+  "last_refined": "2026-05-26T15:30:00-04:00"
+}
 ```
-Use the researcher subagent to:
-- Insert into Milvus collection "inquisitive_memory": {id, project, primary_category, raw_answer, timestamp}
-- Search for entries semantically similar to: "layout changes for visual hierarchy"
+
+**Markdown-only backend** — `summaries/<category>.md`:
+```markdown
+---
+category: styling-layout
+scope: repo
+repo: my-project
+entry_count: 2
+last_refined: "2026-05-26T15:30:00-04:00"
+---
+
+# styling-layout Summary
+
+Cards are strongly preferred over tables for pricing and comparison sections. User values visual hierarchy, badge support, and spacing control over data density.
+
+## Entries
+- 2026-05-26-143022
+- 2026-05-26-150311
 ```
+
+---
+
+## Config file
+
+`.inquisitive/config.json` (repo-level):
+```json
+{
+  "backend": "md-sqlite",
+  "personality": "inquisitive",
+  "frequency": "major",
+  "org_slug": "acme-corp"
+}
+```
+
+`~/.inquisitive/config.json` (global):
+```json
+{
+  "orgs": ["acme-corp", "side-project-org"],
+  "default_personality": "inquisitive"
+}
+```
+
+---
+
+## Write pipeline
+
+Before writing any entry:
+
+1. Read `.inquisitive/config.json` → get `backend`
+2. Classify scope → `"repo"` | `"org"` | `"user"` (see SKILL.md § Memory scoping)
+3. Determine root path from scope
+4. Write to **only** the backends specified in config:
+   - `json` or `json-md` or `all` → write `.json` entry, update `index.json`
+   - `md` or `json-md` or `md-sqlite` or `all` → write `.md` entry, update `index.md`
+   - `sqlite` or `md-sqlite` or `all` → insert into `inquisitive.db`
+5. Update the corresponding `summaries/<category>` file
+6. On any backend failure → append to `errors.log`, continue with remaining backends
+
+Never block on a failed write. Never write to a backend not in `config.backend`.
+
+---
 
 ## Error logging
 
-When a backend write fails, an error line is appended to `data/memory/errors.log`:
+Append-only log at `<scope-root>/errors.log`:
 
 ```
-2026-05-25T14:30:22Z | SQLite insert failed | OperationalError: no such table
-2026-05-25T14:31:05Z | JSON write failed | PermissionError: [Errno 13] Permission denied
+2026-05-26T14:30:22Z | SQLite insert failed | OperationalError: no such table: entries
+2026-05-26T14:31:05Z | JSON write failed | PermissionError: [Errno 13] Permission denied: '.inquisitive/entries/2026-05-26-143022.json'
 ```
 
-Each line: ISO timestamp | backend name | error type + message.
-
-## Writing rules
-
-When writing a new entry:
-1. Always write JSON and Markdown
-2. Always update `index.json` (append)
-3. If SQLite is initialized, also insert there
-4. If Milvus is configured, also insert there
-5. If any backend fails, append to `errors.log` and continue — never block
-
-## Summary updates
-
-When updating a summary file (`data/summaries/<category>.json`):
-1. Read the current summary
-2. Update `summary` text
-3. Update `entries` array (up to 10 IDs)
-4. Update `last_refined` timestamp
-5. If SQLite is initialized, update `summaries` table
-6. If Milvus is configured, update the collection entry
+Format: `ISO timestamp | backend name | error type + message`

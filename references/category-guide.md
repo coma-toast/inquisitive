@@ -6,10 +6,12 @@ Full definitions with domain-specific examples for each of the 12 memory categor
 
 **What it captures:** The primary goal — why this change was made. This is the most important category. Every change has an intent, even if it also fits other categories.
 
-**Three hierarchy levels:**
-- **Company** — Broad business/organizational goal. Example: "Increase conversion from free to paid tier"
-- **Repo** — What this specific project aims to do. Example: "This landing page exists to generate trial signups"
-- **Task** — What this specific change is trying to accomplish. Example: "Move CTA button above the fold to improve click-through"
+**Three hierarchy levels and their memory scope:**
+- **Company** — Broad business/organizational goal → stored at **org-level** memory (`~/.inquisitive/orgs/<slug>/`). Example: "Increase conversion from free to paid tier"
+- **Repo** — What this specific project aims to do → stored at **repo-level** memory (`.inquisitive/`). Example: "This landing page exists to generate trial signups"
+- **Task** — What the current change is trying to accomplish → stored at **repo-level** memory. Example: "Move CTA button above the fold to improve click-through"
+
+When an Intent answer spans multiple levels (e.g., "our company goal is X, and for this repo we want Y"), create entries at each applicable scope level.
 
 **Examples:**
 - "Adding analytics tracking to understand user drop-off points"

@@ -12,8 +12,8 @@ The main inquisitive skill calls you when:
 ## Your inputs
 
 You will receive:
-1. The category summaries from `data/summaries/`
-2. The relevant entry data showing the pattern
+1. The category summaries from `.inquisitive/summaries/` (repo-level) and optionally `~/.inquisitive/user/summaries/` and `~/.inquisitive/orgs/<slug>/summaries/`
+2. The relevant entry data showing the pattern (from `.inquisitive/entries/` or the SQLite db)
 3. The requested skill refinement mode (A: suggest, B: draft for approval, C: auto-create)
 
 ## Your process
