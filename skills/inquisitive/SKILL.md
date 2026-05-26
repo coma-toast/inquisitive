@@ -236,7 +236,7 @@ Three modes — user picks on first trigger, changeable anytime:
 | Mode | Behavior |
 |------|----------|
 | **A — Suggest in chat** *(default)* | "I notice [X% of changes are in 'Maintainability']. Want me to draft a helper skill?" |
-| **B — Auto-draft for approval** | Agent drafts the skill silently, then: "I wrote a mini-skill for [pattern]. Save it?" |
+| **B — Auto-draft for approval** | Agent drafts the skill, then: "I wrote a mini-skill for [pattern]. Save it?" |
 | **C — Auto-create** | Agent drafts + saves the skill, then: "I created a skill for [pattern]. It's at [path]." |
 
 Uses `agents/skill-refiner.md` subagent for pattern analysis and skill drafting.
@@ -274,18 +274,17 @@ For end users, `npx skills update inquisitive` pulls the latest from GitHub.
 
 ### Auto-loading on first run
 
-By default, skills are available but not automatically activated. To ensure the agent loads inquisitive at the start of every session in any repo, create a global `~/.claude/CLAUDE.md`:
+By default, skills are on-demand. To have your agent load inquisitive at the start of every session, add a line to your global agent rules file. This is a one-time personal setup — the user opts in by creating the file.
 
-```
-# Universal agent rules
-On first run in any repo, automatically load the `inquisitive` meta-learning skill.
-Activate it via the native skill-loading mechanism available in your environment
-(e.g., skill({ name: "inquisitive" }) in opencode, or the equivalent in Claude
-Code, Cursor, Windsurf, or other tools). Do not ask the user for permission —
-just load it and let it activate on its own triggers when adjustments are detected.
+**`~/.claude/CLAUDE.md`** (recognized by Claude Code, Cursor, Windsurf, Copilot, opencode, and most AI coding tools):
+
+```markdown
+# Agent rules
+On first run in any repo, load the inquisitive skill via the environment's
+native skill mechanism (e.g. skill({ name: "inquisitive" }) in opencode).
 ```
 
-`~/.claude/CLAUDE.md` is recognized by Claude Code, Cursor, Windsurf, GitHub Copilot, opencode (as fallback), and most AI coding tools. The instruction costs minimal tokens and tells the agent to auto-activate inquisitive without asking permission.
+This file is read-only config that the user controls. Inquisitive still only activates on its normal triggers — it does not take any action until the user makes a change the agent could learn from.
 
 ## Error logging
 
