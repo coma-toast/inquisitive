@@ -4,8 +4,8 @@
     "inquisitive": {
       "source": "coma-toast/inquisitive",
       "sourceType": "github",
-      "skillPath": "SKILL.md",
-      "computedHash": "5da13c63a6c6af120dfe7b80b000e7916f126f36b973ed4417130957f588dc76"
+      "skillPath": "skills/inquisitive/SKILL.md",
+      "computedHash": "4255da337d5b0618754a17cbc5b0ad0085682142bcb0dcf56dd10bf633c544ad"
     }
   }
 }

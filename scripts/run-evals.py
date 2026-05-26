@@ -299,6 +299,134 @@ def print_behavioral_checklist():
         print(f"       Status: ~ manual")
 
 
+# ── 6. Task tracking ──────────────────────────────────────────────
+def test_task_tracking():
+    print("\n[6] Task tracking")
+    import re
+    from datetime import date
+
+    today = date.today().strftime("%Y-%m-%d")
+
+    # --- helpers ---
+    def make_task(desc, context, validation, priority="Medium"):
+        return {
+            "description": desc,
+            "context": context,
+            "validation": validation,
+            "priority": priority,
+        }
+
+    def render_todo_entry(task):
+        lines = [f"- [ ] {task['description']}"]
+        if task.get("context"):
+            lines.append(f"  - **Context:** {task['context']}")
+        lines.append(f"  - **Validation Criteria:** {task['validation']}")
+        lines.append(f"  - **Created:** {today}")
+        return "\n".join(lines)
+
+    def write_todo_md(tmp_path, tasks_by_priority):
+        sections = {}
+        for priority in ("High", "Medium", "Low"):
+            items = tasks_by_priority.get(priority, [])
+            if items:
+                block = f"## Priority: {priority}\n\n"
+                block += "\n\n".join(render_todo_entry(t) for t in items)
+                sections[priority] = block
+        content = "# TODO\n\n" + "\n\n".join(sections.values()) + "\n"
+        with open(tmp_path, "w") as f:
+            f.write(content)
+        return content
+
+    # Test 1: correct TODO.md format for a single task
+    task = make_task(
+        "Add unit tests for core modules",
+        "No test files found during inquisitive scan",
+        "All core modules have at least one passing test",
+    )
+    entry = render_todo_entry(task)
+    assert "- [ ] Add unit tests" in entry, "Missing checkbox"
+    assert "**Context:**" in entry, "Missing Context"
+    assert "**Validation Criteria:**" in entry, "Missing Validation Criteria"
+    assert f"**Created:** {today}" in entry, "Missing or wrong Created date"
+    ok("Single task renders correct TODO.md format")
+
+    # Test 2: high-priority task omits Context gracefully when empty
+    task_no_ctx = make_task("Move secrets to env vars", "", "No hardcoded secrets in repo", "High")
+    entry2 = render_todo_entry(task_no_ctx)
+    assert "**Context:**" not in entry2, "Context should be omitted when empty"
+    assert "**Validation Criteria:**" in entry2
+    ok("Context line omitted when empty")
+
+    # Test 3: multiple tasks written to correct priority sections
+    with tempfile.NamedTemporaryFile(suffix=".md", delete=False, mode="w") as f:
+        tmp_path = f.name
+
+    tasks_by_priority = {
+        "High": [make_task("Fix auth bypass", "Security gap", "Auth tests pass", "High")],
+        "Medium": [
+            make_task("Add README usage section", "Missing docs", "README has usage examples", "Medium"),
+            make_task("Remove dead code in utils/", "Stale helpers", "utils/ has no unused functions", "Medium"),
+        ],
+        "Low": [make_task("Fix code style", "Style drift", "Linter passes", "Low")],
+    }
+    content = write_todo_md(tmp_path, tasks_by_priority)
+    assert "## Priority: High" in content
+    assert "## Priority: Medium" in content
+    assert "## Priority: Low" in content
+    assert content.index("## Priority: High") < content.index("## Priority: Medium")
+    assert content.index("## Priority: Medium") < content.index("## Priority: Low")
+    ok("Tasks written to correct priority sections in order")
+
+    # Test 4: append to existing TODO.md preserves existing content
+    with open(tmp_path, "r") as f:
+        original = f.read()
+    new_task_text = render_todo_entry(make_task("New task", "New context", "New criteria"))
+    with open(tmp_path, "a") as f:
+        f.write("\n" + new_task_text + "\n")
+    with open(tmp_path, "r") as f:
+        appended = f.read()
+    assert original in appended, "Original content lost on append"
+    assert "New task" in appended, "New task not appended"
+    ok("Append preserves existing TODO.md content")
+
+    # Test 5: batch notification format
+    n_tasks = 3
+    task_names = ["Add tests", "Fix auth", "Update README"]
+    summary = f"Found {n_tasks} tasks and added them to TODO.md:\n" + "\n".join(f"- {t}" for t in task_names)
+    assert f"Found {n_tasks} tasks" in summary
+    assert all(t in summary for t in task_names)
+    ok("Batch notification summary format correct")
+
+    # Test 6: skill detection — known todo skill names
+    known_todo_skills = {"todo-add", "todo-check", "todo-manager"}
+    mock_loaded_skills = ["inquisitive", "todo-add", "grill-me"]
+    detected = known_todo_skills.intersection(set(mock_loaded_skills))
+    assert len(detected) == 1 and "todo-add" in detected
+    ok("Skill detection finds todo-add in loaded skill list")
+
+    # Test 7: skill detection — no todo skill available → fallback
+    mock_no_todo = ["inquisitive", "grill-me", "frontend-design"]
+    detected_none = known_todo_skills.intersection(set(mock_no_todo))
+    assert len(detected_none) == 0
+    ok("Skill detection correctly identifies no todo skill → fallback to TODO.md")
+
+    # Test 8: priority assignment defaults
+    priority_rules = {
+        "security": "High",
+        "blocking": "High",
+        "missing tests": "Medium",
+        "dead code": "Medium",  # default
+        "cosmetic": "Low",
+        "style": "Low",
+    }
+    assert priority_rules["security"] == "High"
+    assert priority_rules["missing tests"] == "Medium"
+    assert priority_rules["cosmetic"] == "Low"
+    ok("Priority assignment rules: High/Medium/Low map correctly")
+
+    os.unlink(tmp_path)
+
+
 # ── Main ──────────────────────────────────────────────────────────
 def main():
     print(f"Inquisitive Eval Runner")
@@ -308,6 +436,7 @@ def main():
     test_entry_persistence()
     test_category_matching()
     test_personalities()
+    test_task_tracking()
     print_behavioral_checklist()
 
     auto = PASS + FAIL

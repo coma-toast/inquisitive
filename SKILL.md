@@ -143,6 +143,55 @@ If scan accepted:
 
 Manual trigger: `/inquisitive-scan` or "run the repo scan again"
 
+## Task tracking
+
+When inquisitive identifies actionable tasks (cleanup, missing tests, missing docs, dead code, etc.) during a bootstrap scan or any session, it tracks them without interrupting the flow.
+
+### Detection
+
+Flag a task when:
+- A scan reveals a clear gap (no tests, dead code, missing README section, stale config)
+- A question answer implies deferred work (e.g., "that module is outdated")
+- The user explicitly mentions something needs fixing
+
+### Delegation order
+
+1. **Check if a todo skill is available** — look for `todo-add`, `todo-check`, or `todo-manager` in the agent's loaded skill list (system prompt). If found, delegate task creation to it.
+2. **Check the filesystem** — if the skill list is unavailable, glob for `todo-*/SKILL.md` in common skill paths (`~/.agents/skills/`, `.opencode/skills/`, `~/.config/opencode/skills/`). If found, delegate.
+3. **Check if a todo MCP server is available** — if a todo/task MCP tool is registered, use it.
+4. **Fall back: write directly to `TODO.md`** in the repo root using the standard format (see `references/task-tracking.md`).
+
+### Batch, don't interrupt
+
+- Collect all tasks identified during a scan; emit them **all at once at the end**
+- Do not break question flow to log tasks one-by-one
+- After the scan, summarize:
+  > "Found [N] tasks and added them to TODO.md [or: via [skill-name]]:"
+  > - [brief task list]
+  >
+  > Take action on any now, or review TODO.md later.
+
+### George/Phoebe variant
+
+> "George find [N] thing to fix. Added to list. Sniff sniff. Look later?"
+
+### Fallback TODO.md format
+
+If writing directly (no todo skill available):
+
+```markdown
+- [ ] Task description
+  - **Context:** Why this was flagged by inquisitive
+  - **Validation Criteria:** How to confirm it's done
+  - **Created:** YYYY-MM-DD
+```
+
+Priority sections (create if missing): `## Priority: High`, `## Priority: Medium`, `## Priority: Low`
+
+Default priority: **Medium** unless the gap is a security issue or blocking (High) or purely cosmetic (Low).
+
+See `references/task-tracking.md` for full format reference and skill detection details.
+
 ## Memory architecture
 
 ### Layer 1: Individual entries (append-only log)
