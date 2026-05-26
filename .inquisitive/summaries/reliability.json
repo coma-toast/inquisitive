@@ -1,0 +1,11 @@
+{
+  "category": "reliability",
+  "summary": "Failures should be visible. Explicit error logging to file, never silent failure or blocking.",
+  "entries": [
+    "2026-05-25-122758-005"
+  ],
+  "entry_count": 1,
+  "last_refined": "2026-05-25T12:27:58Z",
+  "scope": "repo",
+  "repo": "inquisitive"
+}

@@ -1,0 +1,8 @@
+# Private — not committed
+entries/
+*.db
+errors.log
+
+# Summaries ARE committed (enables team sharing)
+# To stop sharing, uncomment:
+# summaries/

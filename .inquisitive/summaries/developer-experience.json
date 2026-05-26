@@ -1,0 +1,13 @@
+{
+  "category": "developer-experience",
+  "summary": "Server README has default NestJS boilerplate \u2014 needs replacing with TeslaLink project info. User wants real documentation.",
+  "hierarchy": null,
+  "entries": [
+    "2026-05-25-122758-003",
+    "2026-05-25-122758-004"
+  ],
+  "entry_count": 2,
+  "last_refined": "2026-05-26T16:02:00-04:00",
+  "scope": "repo",
+  "repo": "inquisitive"
+}

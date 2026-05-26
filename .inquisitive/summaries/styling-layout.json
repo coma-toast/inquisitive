@@ -1,0 +1,12 @@
+{
+  "category": "styling-layout",
+  "summary": "TeslaLink uses MUI Joy primarily but has MUI Material imports bleeding in (e.g., Divider in App.tsx). User wants cleanup \u2014 pick one library consistently.",
+  "hierarchy": null,
+  "entries": [
+    "2026-05-25-122758-001"
+  ],
+  "entry_count": 1,
+  "last_refined": "2026-05-26T16:01:00-04:00",
+  "scope": "repo",
+  "repo": "inquisitive"
+}

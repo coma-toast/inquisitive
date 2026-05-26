@@ -1,0 +1,52 @@
+[
+  {
+    "id": "2026-05-25-122758-001",
+    "timestamp": "2026-05-25T12:27:58Z",
+    "scope": "repo",
+    "repo": "inquisitive",
+    "primary_category": "styling-layout",
+    "secondary_category": "intent",
+    "criticality": 3,
+    "was_planned": true
+  },
+  {
+    "id": "2026-05-25-122758-002",
+    "timestamp": "2026-05-25T12:27:58Z",
+    "scope": "repo",
+    "repo": "inquisitive",
+    "primary_category": "maintainability",
+    "secondary_category": "developer-experience",
+    "criticality": 4,
+    "was_planned": true
+  },
+  {
+    "id": "2026-05-25-122758-003",
+    "timestamp": "2026-05-25T12:27:58Z",
+    "scope": "repo",
+    "repo": "inquisitive",
+    "primary_category": "developer-experience",
+    "secondary_category": "reliability",
+    "criticality": 4,
+    "was_planned": false
+  },
+  {
+    "id": "2026-05-25-122758-004",
+    "timestamp": "2026-05-25T12:27:58Z",
+    "scope": "repo",
+    "repo": "inquisitive",
+    "primary_category": "developer-experience",
+    "secondary_category": "maintainability",
+    "criticality": 3,
+    "was_planned": true
+  },
+  {
+    "id": "2026-05-25-122758-005",
+    "timestamp": "2026-05-25T12:27:58Z",
+    "scope": "repo",
+    "repo": "inquisitive",
+    "primary_category": "reliability",
+    "secondary_category": "developer-experience",
+    "criticality": 3,
+    "was_planned": true
+  }
+]

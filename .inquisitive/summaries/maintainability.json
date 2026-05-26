@@ -1,0 +1,11 @@
+{
+  "category": "maintainability",
+  "summary": "Single source of truth matters. Root SKILL.md is canonical. Use existing tooling (npx skills update) before custom solutions.",
+  "entries": [
+    "2026-05-25-122758-002"
+  ],
+  "entry_count": 1,
+  "last_refined": "2026-05-25T12:27:58Z",
+  "scope": "repo",
+  "repo": "inquisitive"
+}
